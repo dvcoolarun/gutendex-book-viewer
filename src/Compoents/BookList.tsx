@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { fetchBook } from "../api";
 import { Book, ApiResponse } from "../types";
 import { selectBookFormat } from "../utils";
+import { node } from "prop-types";
 
 const BookList: React.FC = () => {
     const { category } = useParams<{ category: string }>();
@@ -19,8 +20,8 @@ const BookList: React.FC = () => {
 
         try {
             const data: ApiResponse = await fetchBook(url);
-            setBooks(data.results)
-            setNextPage(data.next)
+            setBooks(prevBooks => [...prevBooks, ...data.results]);
+            setNextPage(data.next ? data.next.replace(/http:\/\/localhost:\d+/, 'http://skunkworks.ignitesol.com:8000') : null);
         } catch (err) {
             setError('Failed to fetch books');
         } finally {
@@ -28,10 +29,31 @@ const BookList: React.FC = () => {
         }
     }
 
+    const observer = useRef<IntersectionObserver | null>(null);
+
+    const lastBookElementRef = useCallback((node: HTMLDivElement | null) => {
+        if (loading) return;
+
+        if (observer.current) observer.current.disconnect();
+
+        observer.current = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && nextPage) {
+                loadBooks(nextPage);
+            }
+        });
+
+        if (node) observer.current.observe(node);
+
+    }, [loading, nextPage]);
+
     useEffect(() => {
-        setBooks([]);
-        const url = `http://skunkworks.ignitesol.com:8000/books/?topic=${category}&search=${searchTerm}`;
-        loadBooks(url);
+        const timer = setTimeout(() => {
+            setBooks([]);
+            const url = `http://skunkworks.ignitesol.com:8000/books/?topic=${category}&search=${searchTerm}`;
+            loadBooks(url);
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, [category, searchTerm]);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,8 +78,8 @@ const BookList: React.FC = () => {
           />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {books.map((book) => (
-            <div key={book.title} className="flex flex-col">
+          {books.map((book, index) => (
+            <div key={`${book.id}-${index}`} ref={index === books.length - 1 ? lastBookElementRef : null} className="flex flex-col">
               <img src={book.formats['image/jpeg']} alt={book.title} className="w-full h-48 object-cover rounded-md shadow-md mb-2" />
               <h3 className="font-semibold text-sm">{book.title}</h3>
               <p className="text-xs text-gray-600">{book.authors.map((author) => author.name).join(', ')}</p>
