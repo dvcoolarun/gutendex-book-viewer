@@ -12,9 +12,9 @@ export interface Book {
     download_count: number; 
 }
 
-export interface ApiResponse<T> {
+export interface ApiResponse {
     count: number;
     next: string | null;
     previous: string | null;
-    results: T[];
+    results: Book[]
 }
