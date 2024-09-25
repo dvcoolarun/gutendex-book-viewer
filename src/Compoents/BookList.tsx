@@ -5,6 +5,8 @@ import { Book, ApiResponse } from "../types";
 import { ArrowLeft, Search } from "lucide-react";
 import { debounce } from 'lodash';
 
+const API_URL = process.env.PUBLIC_API_URL;
+
 const BookList: React.FC = () => {
     const { category } = useParams<{ category: string }>();
     const navigate = useNavigate();
@@ -22,7 +24,7 @@ const BookList: React.FC = () => {
         try {
             const data: ApiResponse = await fetchBook(url);
             setBooks(prevBooks => isNewSearch ? data.results : [...prevBooks, ...data.results]);
-            setNextPage(data.next ? data.next.replace(/http:\/\/localhost:\d+/, 'http://skunkworks.ignitesol.com:8000') : null);
+            setNextPage(data.next ? data.next.replace(/http:\/\/localhost:\d+/, API_URL) : null);
         } catch (err) {
             setError('Failed to fetch books');
         } finally {
