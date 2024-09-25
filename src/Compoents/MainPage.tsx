@@ -1,4 +1,6 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 const categories: Array<{ name: string, icon: string }> = [
   { name: "FICTION", icon: "📚" },
@@ -28,9 +30,9 @@ const MainPage: React.FC = () => {
                                 <span className='text-lg'>{category.name}</span>
                             </div>
                             <div>
-                                <button className="text-purple-600 text-2xl">
-                                    ➡️
-                                </button>        
+                                <Link to={`/books/${category.name}`}>
+                                    <ArrowRight className='text-purple-600 text-2xl' />
+                                </Link>
                             </div>
                         </div>
                     ))}

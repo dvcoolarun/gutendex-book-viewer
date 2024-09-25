@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchBook } from "../api";
 import { Book, ApiResponse } from "../types";
-
+import { ArrowLeft, Search } from "lucide-react";
+import { debounce } from 'lodash';
 
 const BookList: React.FC = () => {
     const { category } = useParams<{ category: string }>();
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState<string>("");
 
     const [books, setBooks] = useState<Book[]>([]);
@@ -32,7 +34,6 @@ const BookList: React.FC = () => {
 
     const lastBookElementRef = useCallback((node: HTMLDivElement | null) => {
         if (loading) return;
-
         if (observer.current) observer.current.disconnect();
 
         observer.current = new IntersectionObserver((entries) => {
@@ -40,20 +41,21 @@ const BookList: React.FC = () => {
                 loadBooks(nextPage, false);
             }
         });
-
         if (node) observer.current.observe(node);
-
     }, [loading, nextPage]);
+    
+    const debouncedSearch = useCallback(debounce((searchTerm: string) => {
+        setBooks([]);
+        const url = `http://skunkworks.ignitesol.com:8000/books/?topic=${category}&search=${searchTerm}`;
+        loadBooks(url, true);
+    }, 500), [category]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setBooks([]);
-            const url = `http://skunkworks.ignitesol.com:8000/books/?topic=${category}&search=${searchTerm}`;
-            loadBooks(url, true);
-        }, 1000);
+        debouncedSearch(searchTerm);
 
-        return () => clearTimeout(timer);
-    }, [category, searchTerm]);
+        return () => debouncedSearch.cancel();
+    }, [searchTerm, debouncedSearch]);
+
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
@@ -63,6 +65,7 @@ const BookList: React.FC = () => {
         <div className="min-h-screen bg-gray-100 p-4">
             <div className="max-w-6xl mx-auto">
                 <div className="flex items-center mb-6">
+                    <ArrowLeft className="mr-2 cursor-pointer" onClick={() => navigate('/')} />  
                     <h1 className="text-2xl font-bold text-purple-600">
                         {category?.toUpperCase()}
                     </h1>
@@ -75,6 +78,7 @@ const BookList: React.FC = () => {
                         value={searchTerm}
                         onChange={handleSearch}
                     />
+                    <Search className="absolute left-3 top-2.5 text-gray-400" />
                 </div>
                 {loading && books.length === 0 ? (
                     <div className="flex justify-center items-center h-64">
