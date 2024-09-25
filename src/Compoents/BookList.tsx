@@ -5,8 +5,6 @@ import { Book, ApiResponse } from "../types";
 import { ArrowLeft, Search } from "lucide-react";
 import { debounce } from 'lodash';
 
-const API_URL = process.env.PUBLIC_AP
-
 const BookList: React.FC = () => {
     const { category } = useParams<{ category: string }>();
     const navigate = useNavigate();
